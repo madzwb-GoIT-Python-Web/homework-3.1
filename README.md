@@ -8,10 +8,10 @@
 
     positional arguments:
     directories           Directories' list to process,
-                        if not specified used current directory.
+                          if not specified used current directory.
 
     options:
-        -h, --help            show this help message and exit
+        -h, --help              show this help message and exit
         -k, --keep-empty-dir    Don't remove empty directories.
         -n, --normalize         Normalize file and directory(for unpacking archives) names.
         -o, --overwrite         Overwrite existing files and directories.
