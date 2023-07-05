@@ -14,7 +14,7 @@ from typing import Any, Callable, cast
 import registry
 
 from executors  import Executor
-from logger     import logger, debugger as DEBUG
+from logger     import logger
 
 class IAction(ABC):
     
@@ -33,10 +33,15 @@ class Action(IAction):
 
     @staticmethod
     def make_translation() -> dict[int, str]:
-        """Create translation table from cyrillic to latin. Also replace all other character with symbol - '_' except digits"""
+        """Create translation table from cyrillic to latin.
+        Also replace all other character with symbol - '_' except digits"""
         translation_table = {}
-        latin = ("a", "b", "v", "g", "d", "e", "e", "j", "z", "i", "j", "k", "l", "m", "n", "o", "p", "r", "s", "t", "u",
-                "f", "h", "ts", "ch", "sh", "sch", "", "y", "", "e", "yu", "ya", "je", "i", "ji", "g")
+        latin = (
+                    "a", "b", "v", "g", "d", "e", "e", "j", "z", "i", "j",
+                    "k", "l", "m", "n", "o", "p", "r", "s", "t", "u", "f",
+                    "h", "ts", "ch", "sh", "sch", "", "y", "", "e", "yu",
+                    "ya", "je", "i", "ji", "g"
+                )
 
         # Make cyrillic tuplet
         cyrillic_symbols = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяєіїґ"
@@ -93,7 +98,7 @@ class Action(IAction):
             return  destination / file_name
         raise Exception(f"Root path for destination:'{destination}' not defined.")
     
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<Action name='{self.__class__.__name__.replace('Action','')}' path='{str(self.path)}'>"
 
 class CopyAction(Action):
@@ -184,7 +189,7 @@ class RemoveEmptyDirAction(Action):
         if self.path.exists() and not any(self.path.iterdir()):
             self.path.rmdir()
             return str(self) + ". Path:'" + str(self.path) + "' done."
-        raise Exception(str(self) + f". Can't remove directory:{self.path}" if not any(self.path.iterdir()) else str(self) + f" Directory:{self.path} not empty.")
+        raise Exception(str(self) + f". Can't remove directory:{self.path}" if not any(self.path.iterdir()) else str(self) + f". Directory:{self.path} not empty.")
         # return None
 
 class ActionSequence(IAction, UserList):
@@ -193,20 +198,21 @@ class ActionSequence(IAction, UserList):
         super().__init__(actions)
         self.path = ",".join(str(action.path) for action in actions)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<Action name='{self.__class__.__name__.replace('Action','')}' actions=({', '.join([str(action) for action in self])})"
 
-    def __call__(self, *args, **kwargs) -> str:
-        results = ""
+    def __call__(self, *args, **kwargs) -> list[str]:
+        results = []
         for action in self.data:
             result = ""
             try:
                 result = action()
             except Exception as e:
-                result = e
-            if results:
-                results += "\n"
-            results = results + str(result)
+                result = str(e)
+            # if results:
+            #     results += "\n"
+            # results = results + str(result)
+            results.append(result)
         return results
 
 class ACTIONS(registry.REGISTRY):
