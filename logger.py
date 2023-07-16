@@ -5,28 +5,6 @@ import multiprocessing
 import os
 import config
 
-# import inspect
-
-# def _get_caller(frame):
-#     cls_name = None
-#     fun_name = None
-#     caller   = None
-#     if frame:
-#         qualname = frame.f_code.co_qualname
-#         names = qualname.split(".")
-#         length = len(names)
-
-#         cls_name = names[length - 2] if length >= 2 else names[length - 1]
-#         fun_name = names[-1]
-#         caller   = list(frame.f_locals.values())[0] if len(frame.f_locals) else None
-#     return cls_name, fun_name, caller
-
-# frame = inspect.currentframe()
-# print(_get_caller(frame))
-# while frame := frame.f_back:
-#     print(_get_caller(frame))
-# print()
-
 if config.LOG_MULTI:
     logger = multiprocessing.get_logger()
 else:
