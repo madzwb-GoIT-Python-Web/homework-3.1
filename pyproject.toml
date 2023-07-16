@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools_scm[toml]>=7.1.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "filesorter"
+# version = "0.0.1"
+dynamic = ["version"]
+authors = [
+  { name="Volodymyr Zawatsky", email="volodymyr.zawatsky@gmail.com" },
+]
+description = "homework-3.1"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "registrator@git+https://www.github.com/madzwb/registrator@0.1.0",
+  "executors@git+https://www.github.com/madzwb/executors@0.1.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/madzwb-GoIT-Python-Web/homework-3.1"
+"Bug Tracker" = "https://github.com/madzwb-GoIT-Python-Web/homework-3.1/issues"
+
+# See https://github.com/pypa/setuptools_scm/blob/main/pyproject.toml
+[tool.setuptools_scm]
+# "calver-by-date" "guess-next-dev" "no-guess-dev" "post-release" "python-simplified-semver" "release-branch-semver"
+version_scheme = "release-branch-semver"
+# "dirty-tag" "node-and-date" "node-and-timestamp"
+local_scheme =  "no-local-version"
+
+# [tool.setuptools]
+# packages = ["filesorter"]
+
+[tool.setuptools.package-data]
+typeguard = ["settings.json"]
+
+# [tool.setuptools.packages.find]
+# where = ["src"]
+
+[project.optional-dependencies]
+test = [
+    "pytest >= 7.4.0",
+]
+
+[tool.coverage.run]
+source = ["filesorter"]
+command_line = "-m unittest tests/test_executors.py"
+concurrency = ["thread", "multiprocessing"]
+omit = ["__init__.py"]
+
+[tool.tox]
+legacy_tox_ini = """
+  [tox]
+  envlist = py310, py311, py312
+  skip_missing_interpreters = true
+  minversion = 4.6.4
+
+  [testenv]
+  extras = test
+  commands = python -m pytest {posargs}
+"""
