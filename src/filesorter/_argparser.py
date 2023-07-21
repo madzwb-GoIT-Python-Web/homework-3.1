@@ -52,18 +52,19 @@ def parse_args():
         action="store",
         default="mainthread",
         required=False,
-        nargs='*'
+        nargs='?'
     )
     parser.add_argument(
         "-u", "--use",
         type=str.lower,
         help="Individual executor.",
         choices=["mainthread", "thread", "process", "threads", "processes", "threadpool", "processpool"],
-        metavar="executor",
+        metavar="ext_executor",
+        dest="ext_executor",
         action="store",
         default="mainthread",
         required=False,
-        # nargs='*'
+        nargs='?'
     )
 
     parser.add_argument(

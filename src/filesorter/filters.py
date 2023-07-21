@@ -2,7 +2,7 @@ from collections import UserDict
 from copy import deepcopy
 from pathlib import Path
 
-import actions
+import filesorter.actions as actions
 # import executors
 
 

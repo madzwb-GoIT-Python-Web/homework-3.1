@@ -11,10 +11,10 @@ from typing import Any, Callable, cast
 # import sys
 # import threading
 
-import registry
+import registrator.registrator as registrator
 
-from executors  import Executor
-from logger     import logger
+from executors.executors    import Executor
+from filesorter.logger      import logger
 
 class IAction(ABC):
     
@@ -215,7 +215,7 @@ class ActionSequence(IAction, UserList):
             results.append(result)
         return results
 
-class ACTIONS(registry.REGISTRY):
+class ACTIONS(registrator.REGISTRATOR):
     """Actions' Factory"""
     pass
 

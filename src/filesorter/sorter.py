@@ -3,23 +3,27 @@
 
 from __future__ import annotations
 
+import sys
 import time
 
 from pathlib import Path
 
-import config
+
+import filesorter.config as config
+
+from filesorter.logger import init, logger, formatter_result as formatter
 if "__main__" == __name__:
+    import filesorter._argparser as _argparser
+
     config.SCRIPT = __file__
-    import _argparser
+    init()
 
 if config.PROFILING:
     import cProfile
 
-import executors
-
-from filters import Filter, Filters
-from logger import logger, formatter_result as formatter
-from task import Task
+from filesorter._executors import registry
+from filesorter.filters import Filter, Filters
+from filesorter.task import Task
 
 
 
@@ -41,7 +45,7 @@ def sort_targets(path_to_target, executor):#, tasks: multiprocessing.JoinableQue
 
     for path in pathes:
         filters = Filters(path)
-        filters += Filter(Path("archives"),  ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"] ,                           ["unpack", "copy"],    "process")
+        filters += Filter(Path("archives"),  ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"] ,                           ["unpack", "copy"],    "processes")
         filters += Filter(Path("audios"),    ["wav", "mp3", "ogg", "amr"],                                                       ["copy"])
         filters += Filter(Path("images"),    ["jpeg", "png", "jpg", "svg"],                                                      ["copy"])
         filters += Filter(Path("videos"),    ["avi", "mp4", "mov", "mkv"],                                                       ["copy"])
@@ -56,12 +60,13 @@ def sort_targets(path_to_target, executor):#, tasks: multiprocessing.JoinableQue
 
 def main():
     _argparser.parse_args()
-
+    profile = None
     if config.PROFILING:
         profile = cProfile.Profile()
         profile.enable()
         start = time.time()
-    executor = executors.registry[_argparser.args.executor]()
+    
+    executor = registry[_argparser.args.executor]()
 
     sort_targets("D:/edu/test", executor)
     executor.join()
@@ -79,7 +84,7 @@ def main():
 
     print()
 
-    if config.PROFILING:
+    if config.PROFILING and profile is not None:
         profile.disable()
         profile.print_stats(sort="cumtime")
 

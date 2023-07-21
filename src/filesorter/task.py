@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import actions
-import executors
+from executors.executors import Executor
 
-from filters import Filters
-from logger import logger
+import filesorter.actions as actions
+from filesorter._executors import registry
+from filesorter.filters import Filters
+from filesorter.logger import logger
 
 
 
@@ -14,9 +15,9 @@ class Task(actions.Task):
 
     def __init__(
             self,
-            path: Path|str,
-            filters: Filters,
-            executor:executors.Executor|None = None
+            path:       Path|str,
+            filters:    Filters,
+            executor:   Executor|None = None
         ):
         super().__init__(executor)
         self.path = Path(path)
@@ -36,13 +37,19 @@ class Task(actions.Task):
         executor = None
         if use and self.executor:
             if use not in self.executor.childs:
-                executor = executors.EXECUTORS()[use]()
-                logger.debug(
-                    f"{executor.debug_info('Task')}. Task({str(self)}). "
-                    f"Created child executor({type(executor)})."
-                )
-                self.executor.childs[use] = executor
-                executor.parent = self.executor
+                try:
+                    creator = registry[use]
+                except KeyError as ex:
+                    creator = None
+                if creator is not None:
+                    executor = creator()
+                    if executor is not None:
+                        logger.debug(
+                            f"{executor.debug_info('Task')}. Task({str(self)}). "
+                            f"Created child executor({type(executor)})."
+                        )
+                        self.executor.childs[use] = executor
+                        executor.parent = self.executor
             else:
                 executor = self.executor.childs[use]
             if executor is None:
