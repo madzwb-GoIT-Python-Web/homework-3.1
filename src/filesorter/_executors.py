@@ -1,6 +1,6 @@
 import sys
 
-import executors.executors as executors
+import executors.iexecutor as iexecutor
 import registrator.registrator as registrator
 
 
@@ -8,6 +8,6 @@ import registrator.registrator as registrator
 class EXECUTERS(registrator.REGISTRATOR):
     pass
 
-EXECUTERS.register("Executor", "executors.executors", vars(sys.modules["executors.executors"]), executors.IExecutor)
+EXECUTERS.register("Executor", "executors", vars(sys.modules["executors"]), iexecutor.IExecutor)
 registry = EXECUTERS()
-
+pass
