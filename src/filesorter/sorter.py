@@ -1,7 +1,7 @@
 """
 """
 
-from __future__ import annotations
+# from __future__ import annotations
 
 import sys
 import time
@@ -9,14 +9,17 @@ import time
 from pathlib import Path
 
 
-import filesorter.config as config
+import logger.config as config
+import logger.logger as Logging
 
-from filesorter.logger import init, logger, formatter_result as formatter
+from logger.logger import logger,formatter_result
+
+config.SCRIPT = __file__
 if "__main__" == __name__:
     import filesorter._argparser as _argparser
-
-    config.SCRIPT = __file__
-    init()
+    config.LOG_FILE_TRUNCATE = True
+    Logging.init()
+    Logging.truncate()
 
 if config.PROFILING:
     import cProfile
@@ -73,11 +76,12 @@ def main():
     executor.shutdown(True)
 
     for handler in logger.handlers:
-        handler.setFormatter(formatter)
+        handler.setFormatter(formatter_result)
+    # time.sleep(3)
     logger.info("<Result")
     try:
         while result := executor.results.get_nowait():
-            logger.info("\t" + result)
+            logger.info("\t" + str(result))
     except Exception as e:
         pass
     logger.info(">")
