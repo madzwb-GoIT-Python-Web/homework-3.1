@@ -1,4 +1,4 @@
-from __future__ import annotations
+# from __future__ import annotations
 
 import shutil
 # import sys
@@ -13,8 +13,8 @@ from typing import Any, Callable, cast
 
 import registrator.registrator as registrator
 
-from executors.executors    import Executor
-from filesorter.logger      import logger
+from executors import Executor
+# from filesorter.logger      import logger
 
 class IAction(ABC):
     
