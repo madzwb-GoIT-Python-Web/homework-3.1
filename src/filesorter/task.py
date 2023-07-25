@@ -1,5 +1,3 @@
-# from __future__ import annotations
-
 from pathlib import Path
 
 from executors import Executor
@@ -8,6 +6,7 @@ import filesorter.actions as actions
 from filesorter._executors import registry
 from filesorter.filters import Filters
 from logger.logger import logger
+from executors import Logging
 
 
 
@@ -15,24 +14,19 @@ class Task(actions.Task):
 
     def __init__(
             self,
-            path:       Path|str,
-            filters:    Filters,
+            path    :   Path|str,
+            filters :   Filters,
             executor:   Executor|None = None
         ):
         super().__init__(executor)
         self.path = Path(path)
-        
-        # self.executor: executors.Executor|None = None
-        # self.tasks      = tasks     if tasks    else executor.tasks
-        # self.results    = results   if results  else executor.results
-        # self.create     = create    if create   else executor.create
-
         self.rmdir_actions: list[actions.Action] = []
         self.filters: Filters = filters
 
     def __str__(self):
         return f"<Task name='Directory traverse' path='{str(self.path)}'>"
 
+    # if present use field create child executor
     def _executor(self, use: str):
         executor = None
         if use and self.executor:
@@ -64,7 +58,7 @@ class Task(actions.Task):
             executor = self.executor
         return executor
 
-    def _process_file(self, path):#, executor, tasks, results, create):
+    def _process_file(self, path):
         _filter = self.filters(path)
         action = _filter(path)
         executor = self._executor(_filter.use)
@@ -88,22 +82,18 @@ class Task(actions.Task):
 
     def __call__(self, path = None, *args, **kwargs):
         path = self.path if path is None else path
-        # tasks   = self.tasks    if not tasks    else tasks
-        # results = self.results  if not results  else results
-        # create  = self.create   if not create   else create
-        # executor = executors.EXECUTORS()["processes"]
         if self.executor is None:
             raise   RuntimeError(
                         f"executor is not specified."
                     )
         
-        is_dir = False
+        is_dir  = False
         is_file = False
         if path:
             # Get path entity type
             is_dir, is_file = self._path_type(path)
             if is_file: 
-                self._process_file(path)#, tasks, results, create)
+                self._process_file(path)
 
             elif is_dir:
                 for p in path.iterdir():
@@ -115,17 +105,11 @@ class Task(actions.Task):
                         #  aka [archives, videos, audios, etc.].
                         if Path(p.name) in self.filters:
                             continue
+                        if p.name in self.filters:
+                            continue
                         #   Remove empty dirs
-                        if not self.filters.keep_empty_dir:# and path.exists() and not any(path.iterdir()):
+                        if not self.filters.keep_empty_dir:
                             self.rmdir_actions.insert(0, actions.RemoveEmptyDirAction(p))
-                        
-                            # (\
-                            #         threading.current_thread()  == threading.main_thread()  \
-                            #     or  self.executor.max_workers   == 1                        \
-                            # )\
-                            # and not multiprocessing.parent_process()\
-                        # if      self.executor.in_main_process   \
-                        #     and self.executor.in_main_thread    \
                         if self.executor.iworkers.value <= 1:
                             results = self.__call__(p) # Going to recusion
                             self.executor.process_results(results)
@@ -133,11 +117,11 @@ class Task(actions.Task):
                             filters_list = self.filters.filters
                             filters = Filters(self.filters.root)
                             filters.filters = filters_list
-                            task = Task(p, filters)#, executor)#, tasks, results, create)
-                            self.executor.submit(task)#, tasks, results, create)
+                            task = Task(p, filters)
+                            self.executor.submit(task)
 
                     elif is_file: # Process files
-                        self._process_file(p)#, executor, tasks, results, create)
+                        self._process_file(p)
                     else:
                         continue
 
@@ -151,19 +135,7 @@ class Task(actions.Task):
         # Remove empty directories
         if self.rmdir_actions:
             rmdir_actions = actions.ActionSequence(self.rmdir_actions)
-            # print(rmdir_actions.path, flush = True)
-            self.executor.submit(rmdir_actions)#, tasks, results, create)
+            self.executor.submit(rmdir_actions)
         
-        self.executor.submit(None)#, executor, tasks, results, create)
-        # if self.executor.results:
-        #     lresults = []
-        #     while True:
-        #         try:
-        #             result = self.executor.results.get_nowait()
-        #             if result:
-        #                 lresults.append(result)
-        #         except Exception as e:
-        #             break
-        #     if lresults:
-        #         return ", ".join(lresults)
+        self.executor.submit(None)
         return self.executor.results
