@@ -1,32 +1,32 @@
 {
     "archives"  :   {
         "extensions"    :   ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"],
-        "functions"     :   ["unpack","move"],
-        "use"           :   "process"
+        "functions"     :   ["unpack","copy"],
+        "use"           :   "processes"
     },
 
     "video"     :   {
         "extensions"    :   ["avi", "mp4", "mov", "mkv"],
-        "functions"     :   ["move"]
+        "functions"     :   ["copy"]
     },
     "audio"     :   {
         "extensions"    :   ["wav", "mp3", "ogg", "amr"],
-        "functions"     :   ["move"]
+        "functions"     :   ["copy"]
     },
     "documents" :   {
         "extensions"    :   ["doc", "docx", "txt", "pdf", "xls", "xlsx", "ppt", "pptx", "rtf", "xml", "ini"],
-        "functions"     :   ["move"]
+        "functions"     :   ["copy"]
     },
     "images"    :   {
         "extensions"    :   ["jpeg", "png", "jpg", "svg"],
-        "functions"     :   ["move"]
+        "functions"     :   ["copy"]
     },
     "software"    :   {
         "extensions"    :   ["exe", "msi", "bat" , "dll"],
-        "functions"     :   ["move"]
+        "functions"     :   ["copy"]
     },
     "other"     :   {
         "extensions"    :   [],
-        "functions"     :   ["move"]
+        "functions"     :   ["copy"]
     }
 }
