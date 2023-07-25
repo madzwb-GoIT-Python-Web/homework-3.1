@@ -150,6 +150,8 @@ class Filters(UserDict):
         # If file extension not found in filters' list and present Filter("other")
         elif not ext in self._ext2filter and Path("other") in self.data:
             filter_ = self.data[Path("other")]
+        elif not ext in self._ext2filter and "other" in self.data:
+            filter_ = self.data["other"]
         else:
             filter_ = self._ext2filter[ext]
         
