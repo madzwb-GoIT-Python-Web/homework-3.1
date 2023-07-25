@@ -72,7 +72,14 @@ class Action(IAction):
     
     translation = make_translation()
 
-    def __init__(self, path: Path, root: Path|None = None, destination: Path|None = None, normalize = False, overwrite = False):
+    def __init__(
+            self,
+            path        : Path,
+            root        : Path|None = None,
+            destination : Path|None = None,
+            normalize   : bool = False,
+            overwrite   : bool = False
+        ):
         self.path       = path          # File to process
         self.root       = root          # Desctination root
         self.destination= destination   # Destination path
