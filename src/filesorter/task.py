@@ -1,13 +1,13 @@
-from __future__ import annotations
+# from __future__ import annotations
 
 from pathlib import Path
 
-from executors.executors import Executor
+from executors import Executor
 
 import filesorter.actions as actions
 from filesorter._executors import registry
 from filesorter.filters import Filters
-from filesorter.logger import logger
+from logger.logger import logger
 
 
 
@@ -45,21 +45,22 @@ class Task(actions.Task):
                     executor = creator()
                     if executor is not None:
                         logger.debug(
-                            f"{executor.debug_info('Task')}. Task({str(self)}). "
+                            f"{Logging.info(str(self))}. "
                             f"Created child executor({type(executor)})."
                         )
                         self.executor.childs[use] = executor
                         executor.parent = self.executor
+                        executor.start()
             else:
                 executor = self.executor.childs[use]
             if executor is None:
                 executor = self.executor
                 logger.warning(
-                    f"{executor.debug_info()}. Task({str(self)}). "
+                    f"{Logging.info(str(self))}. "
                     f"Executor(name='{use}') not found. "
                     f"Fallback to parent executor({type(executor)})."
                 )
-        elif self.executor:
+        elif self.executor is not None:
             executor = self.executor
         return executor
 
@@ -69,6 +70,7 @@ class Task(actions.Task):
         executor = self._executor(_filter.use)
         if executor is not None:
             executor.submit(action)
+            # executor.submit(None)
 
     def _process_dir(self, path):
         pass
@@ -85,7 +87,7 @@ class Task(actions.Task):
         return is_dir, is_file
 
     def __call__(self, path = None, *args, **kwargs):
-        path = self.path if not path else path
+        path = self.path if path is None else path
         # tasks   = self.tasks    if not tasks    else tasks
         # results = self.results  if not results  else results
         # create  = self.create   if not create   else create
@@ -97,25 +99,25 @@ class Task(actions.Task):
         
         is_dir = False
         is_file = False
-        if self.path:
+        if path:
             # Get path entity type
-            is_dir, is_file = self._path_type(self.path)
+            is_dir, is_file = self._path_type(path)
             if is_file: 
-                self._process_file(self.path)#, tasks, results, create)
+                self._process_file(path)#, tasks, results, create)
 
             elif is_dir:
-                for path in self.path.iterdir():
+                for p in path.iterdir():
                     #   Get path entity type
-                    is_dir, is_file = self._path_type(path)
+                    is_dir, is_file = self._path_type(p)
                     
                     if is_dir: # Process dir
                         #  Exclude destination directories
                         #  aka [archives, videos, audios, etc.].
-                        if Path(path.name) in self.filters:
+                        if Path(p.name) in self.filters:
                             continue
                         #   Remove empty dirs
                         if not self.filters.keep_empty_dir:# and path.exists() and not any(path.iterdir()):
-                            self.rmdir_actions.insert(0, actions.RemoveEmptyDirAction(path))
+                            self.rmdir_actions.insert(0, actions.RemoveEmptyDirAction(p))
                         
                             # (\
                             #         threading.current_thread()  == threading.main_thread()  \
@@ -124,18 +126,18 @@ class Task(actions.Task):
                             # and not multiprocessing.parent_process()\
                         # if      self.executor.in_main_process   \
                         #     and self.executor.in_main_thread    \
-                        if self.executor.in_main:
-                            results = self.__call__(path) # Going to recusion
+                        if self.executor.iworkers.value <= 1:
+                            results = self.__call__(p) # Going to recusion
                             self.executor.process_results(results)
                         else:
                             filters_list = self.filters.filters
                             filters = Filters(self.filters.root)
                             filters.filters = filters_list
-                            task = Task(path, filters)#, executor)#, tasks, results, create)
+                            task = Task(p, filters)#, executor)#, tasks, results, create)
                             self.executor.submit(task)#, tasks, results, create)
 
                     elif is_file: # Process files
-                        self._process_file(path)#, executor, tasks, results, create)
+                        self._process_file(p)#, executor, tasks, results, create)
                     else:
                         continue
 
