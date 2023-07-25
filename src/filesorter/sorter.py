@@ -1,8 +1,8 @@
 """
 """
 
-# from __future__ import annotations
-
+import json
+import os
 import sys
 import time
 
@@ -15,8 +15,12 @@ import logger.logger as Logging
 from logger.logger import logger,formatter_result
 
 config.SCRIPT = __file__
-if "__main__" == __name__:
+# print(__name__)
+if      __name__ == "__main__"\
+    or  __name__ == "filesorter.sorter"\
+    :
     import filesorter._argparser as _argparser
+    # Override default config
     config.LOG_FILE_TRUNCATE = True
     Logging.init()
     Logging.truncate()
@@ -30,16 +34,14 @@ from filesorter.task import Task
 
 
 
-def sort_targets(path_to_target, executor):#, tasks: multiprocessing.JoinableQueue[actions.IAction]|queue.Queue[actions.IAction], results, create):
+def sort_targets(path_to_target, executor, settings):
     # Make path list
-    # tasks      = tasks     if tasks    else executor.tasks
-    # results    = results   if results  else executor.results
-    # create     = create    if create   else executor.create
-
     if isinstance(path_to_target, str):
         pathes = path_to_target.split()
     elif isinstance(path_to_target, list):
         pathes = path_to_target
+    elif isinstance(path_to_target, Path):
+        pathes = list(path_to_target.name)
     else:
         raise ValueError(f"{path_to_target} value error.")
     
@@ -47,31 +49,76 @@ def sort_targets(path_to_target, executor):#, tasks: multiprocessing.JoinableQue
     pathes = list(dict.fromkeys(pathes))
 
     for path in pathes:
-        filters = Filters(path)
-        filters += Filter(Path("archives"),  ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"] ,                           ["unpack", "copy"],    "processes")
-        filters += Filter(Path("audios"),    ["wav", "mp3", "ogg", "amr"],                                                       ["copy"])
-        filters += Filter(Path("images"),    ["jpeg", "png", "jpg", "svg"],                                                      ["copy"])
-        filters += Filter(Path("videos"),    ["avi", "mp4", "mov", "mkv"],                                                       ["copy"])
-        filters += Filter(Path("documents"), ["doc", "docx", "txt", "pdf", "xls", "xlsx", "ppt", "pptx", "rtf", "xml", "ini"],   ["copy"])
-        filters += Filter(Path("softwares"), ["exe", "msi", "bat", "dll", "apk"],                                                ["copy"])
-        filters += Filter(Path("other"),     [""],                                                                               ["copy"])
-        
-        task = Task(path, filters, executor)#, tasks, results, create)
-        executor.submit(task)#, executor.tasks, executor.results, executor.create)
-    # print(f"Results size: {executor.results.qsize()}.")
+        filters = Filters(path,_argparser.args.keep_empty_dir)
+        for name, setting in settings.items():
+            filters +=  Filter(
+                            filters,
+                            name,
+                            setting["extensions"],
+                            setting["functions"],
+                            setting["use"] if "use" in setting else ""
+                        )
+        task = Task(path, filters, executor)
+        executor.submit(task)
     return
 
+def load_settings(path = None):
+    if path is not None and not os.path.exists(path):
+        raise LookupError(path, "not exists")
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "settings.json")
+    with open(path, 'r') as settings:
+        dir2ext = json.load(settings)
+    return dir2ext
+
 def main():
-    _argparser.parse_args()
+    
     profile = None
     if config.PROFILING:
         profile = cProfile.Profile()
         profile.enable()
         start = time.time()
-    
+
+    args = _argparser.parse_args()
+    if args.settings:
+        settings = load_settings(args.settings)
+    else:
+        settings = {
+            "archives"  :   {
+                "extensions"    :   ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"],
+                "functions"     :   ["unpack", "copy"],
+                "use"           :   "processes"
+            },
+
+            "video"     :   {
+                "extensions"    :   ["avi", "mp4", "mov", "mkv"],
+                "functions"     :   ["copy"]
+            },
+            "audio"     :   {
+                "extensions"    :   ["wav", "mp3", "ogg", "amr"],
+                "functions"     :   ["copy"]
+            },
+            "documents" :   {
+                "extensions"    :   ["doc", "docx", "txt", "pdf", "xls", "xlsx", "ppt", "pptx", "rtf", "xml", "ini"],
+                "functions"     :   ["copy"]
+            },
+            "images"    :   {
+                "extensions"    :   ["jpeg", "png", "jpg", "svg"],
+                "functions"     :   ["copy"]
+            },
+            "software"  :   {
+                "extensions"    :   ["exe", "msi", "bat", "dll"],
+                "functions"     :   ["copy"]
+            },
+            "other"     :   {
+                "extensions"    :   [],
+                "functions"     :   ["copy"]
+            }
+        }
+
     executor = registry[_argparser.args.executor]()
 
-    sort_targets("D:/edu/test", executor)
+    sort_targets(args.directories, executor, settings)
     executor.join()
     executor.shutdown(True)
 
@@ -95,67 +142,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-    #     # multiprocessing.freeze_support()
-    #     # executor = executors.registry["processes"]
-
-    #     # manager = executors.ProcessesManager()
-    #     # proxy = None
-    #     # proxy = executors.ProcessesExecutorProxy
-    #     # # proxy = executors.Proxy(executors.ProcessesExecutor)
-    #     # # manager.register("Queue", executors.Queue)
-    #     # manager.register("ProcessesExecutor", executors.ProcessesExecutor, proxy)
-    #     # manager.start()
-
-    #     # executor.results = executor.manager.Queue()
-    #     # executor.workers = executor.manager.list()
-    #     # executor.futures = executor.manager.list()
-
-    # # executor = executors.registry["mainthread"]()
-    # # executor = executors.registry["thread"]()
-    # # executor = executors.registry["threads"]()
-    # # executor = executors.registry["threadpool"]()
-    # # executor = executors.registry["processpool"]()
-    # executor = executors.registry["processes"]()
-    # # executor.init(4)
-    # # tasks       = executor.tasks
-    # # results     = executor.results
-    # # create      = executor.create
-
-
-    #     # current = threading.current_thread()
-    #     # main = threading.main_thread()
-    #     # executor = manager.ProcessesExecutor()
-    #     # executor = executors.ProcessesExecutor()
-
-    #     # tasks = manager.Queue()
-    #     # results = manager.Queue()
-    #     # create = manager.Event()
-    #     # executor.tasks = tasks
-    #     # executor.results = results
-    #     # executor.create = create
-    #     # executor.set_tasks(tasks)
-    #     # executor.set_results(results)
-        
-    #     # print(executor.tasks())
-    # # sort_targets(executor, "D:/work")
-    # sort_targets("D:/edu/test", executor)#, tasks, results, create)
-    # # manager.join()
-    # executor.join()
-    # executor.shutdown(True)
-
-    # for handler in logger.handlers:
-    #     handler.setFormatter(formatter)
-    # logger.info("<Result")
-    # try:
-    #     while result := executor.results.get_nowait():
-    #         logger.info("\t" + result)
-    # except Exception as e:
-    #     pass
-    # logger.info(">")
-
-    # print()
-
-    # if config.PROFILING:
-    #     profile.disable()
-    #     profile.print_stats(sort="cumtime")
