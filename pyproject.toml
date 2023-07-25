@@ -21,7 +21,7 @@ classifiers = [
 dependencies = [
   "registrator@git+https://www.github.com/madzwb/registrator@0.1.0",
   "logger@git+https://www.github.com/madzwb/logger@0.2.0",
-  "executors@git+https://www.github.com/madzwb/executors@0.2.0",
+  "executors@git+https://www.github.com/madzwb/executors.git",
 ]
 
 [project.scripts]
@@ -46,7 +46,7 @@ local_scheme =  "no-local-version"
 # packages = ["filesorter"]
 
 [tool.setuptools.package-data]
-typeguard = ["settings.json"]
+filesorter = ["settings.json"]
 
 # [tool.setuptools.packages.find]
 # where = ["src"]
