@@ -1,6 +1,7 @@
+from collections import UserList
 from pathlib import Path
 
-from executors import Executor
+from executors import Executor, TASK_SENTINEL
 
 import filesorter.actions as actions
 from filesorter._executors import registry
@@ -8,7 +9,12 @@ from filesorter.filters import Filters
 from logger.logger import logger
 from executors import Logging
 
+class Queue(UserList):
 
+    def put_nowait(self, item):
+        self.append(item)
+    def get_nowait(self):
+        return self.pop(0)
 
 class Task(actions.Task):
 
@@ -20,17 +26,20 @@ class Task(actions.Task):
         ):
         super().__init__(executor)
         self.path = Path(path)
-        self.rmdir_actions: list[actions.Action] = []
+        self.actions: list[actions.IAction|TASK_SENTINEL] = []
+        if self.executor is not None and self.executor.results is not None:
+            self.results = self.executor.results
+        else:
+            self.results = Queue()
+        # self.files_actions: list[actions.IAction] = []
         self.filters: Filters = filters
 
     def __str__(self):
         return f"<Task name='Directory traverse' path='{str(self.path)}'>"
 
-    # if present use field create child executor
-    def _executor(self, use: str):
+
+    def get_executor_from_registry(self, use: str):
         executor = None
-        if use and self.executor:
-            if use not in self.executor.childs:
                 try:
                     creator = registry[use]
                 except KeyError as ex:
@@ -42,20 +51,53 @@ class Task(actions.Task):
                             f"{Logging.info(str(self))}. "
                             f"Created child executor({type(executor)})."
                         )
+        return executor
+
+    # if present use field, create child executor
+    def _executor(self, use: str):
+        executor = None
+        if use and self.executor is not None:
+            if use == self.executor.alias:
+                return self.executor
+            elif use in self.executor.childs:
+                return self.executor.childs[use]
+            else:
+                executor = self.get_executor_from_registry(use)
+                if executor is not None:
                         self.executor.childs[use] = executor
                         executor.parent = self.executor
                         executor.start()
+                    logger.debug(
+                        f"{Logging.info(str(self))}. "
+                        f"Start child executor({type(executor)})."
+                    )
             else:
-                executor = self.executor.childs[use]
-            if executor is None:
                 executor = self.executor
                 logger.warning(
                     f"{Logging.info(str(self))}. "
                     f"Executor(name='{use}') not found. "
                     f"Fallback to parent executor({type(executor)})."
                 )
-        elif self.executor is not None:
+                return executor
+        elif not use and self.executor is not None:
             executor = self.executor
+            # logger.warning(
+            #     f"{Logging.info(str(self))}. "
+            #     f"Executor(name='{use}') not found. "
+            #     f"Fallback to parent executor({type(executor)})."
+            # )
+            return self.executor
+        elif use and self.executor is None:
+            executor = self.get_executor_from_registry(use)
+            if executor is not None:
+                executor.start()
+                logger.debug(
+                    f"{Logging.info(str(self))}. "
+                    f"Start child executor({type(executor)})."
+                )
+                # self.executor = executor
+            return executor
+        else:
         return executor
 
     def _process_file(self, path):
@@ -64,7 +106,14 @@ class Task(actions.Task):
         executor = self._executor(_filter.use)
         if executor is not None:
             executor.submit(action)
-            # executor.submit(None)
+            if self.executor is None: # For ProcessPool self.executor is None, wait for child
+                executor.submit(TASK_SENTINEL)
+                executor.join()
+                executor.shutdown(False)
+                results = executor.get_results()
+                Executor.process_results(self.results, executor.lresults)
+        else:
+            self.actions.insert(0, action)
 
     def _process_dir(self, path):
         pass
@@ -75,17 +124,19 @@ class Task(actions.Task):
             is_dir  = path.is_dir()
             is_file = path.is_file()
         except Exception as e:
-            if self.executor is not None and self.executor.results is not None:
-                self.executor.results.put_nowait(str(e))
+            self.results.put_nowait(str(e))
+            # if self.executor is not None and self.executor.results is not None:
+            #     self.executor.results.put_nowait(str(e))
             raise e
         return is_dir, is_file
 
     def __call__(self, path = None, *args, **kwargs):
         path = self.path if path is None else path
-        if self.executor is None:
-            raise   RuntimeError(
-                        f"executor is not specified."
-                    )
+        if self.executor is None and self.results is None:
+            self.results = Queue()
+        #     raise   RuntimeError(
+        #                 f"executor is not specified."
+        #             )
         
         is_dir  = False
         is_file = False
@@ -109,13 +160,25 @@ class Task(actions.Task):
                             continue
                         #   Remove empty dirs
                         if not self.filters.keep_empty_dir:
-                            self.rmdir_actions.insert(0, actions.RemoveEmptyDirAction(p))
-                        if self.executor.iworkers.value <= 1:
+                            self.actions.insert(0, actions.RemoveEmptyDirAction(p))
+
+                        if self.executor is None:
+                            results, action = self.__call__(p) # Going to recusion
+                            Executor.process_results(self.results, results)
+                            if action is not None and id(self.actions) != id(action):
+                                self.actions.extend(action)
+                        elif self.executor.iworkers.value <= 1:
                             results = self.__call__(p) # Going to recusion
-                            self.executor.process_results(results)
+                            Executor.process_results(self.results, results)
                         else:
                             filters_list = self.filters.filters
-                            filters = Filters(self.filters.root)
+                            filters = Filters(
+                                self.filters.root,
+                                None,
+                                self.filters.keep_empty_dir,
+                                self.filters.normalize,
+                                self.filters.overwrite,
+                            )
                             filters.filters = filters_list
                             task = Task(p, filters)
                             self.executor.submit(task)
@@ -133,9 +196,12 @@ class Task(actions.Task):
         #     raise Exception(self._status)
 
         # Remove empty directories
-        if self.rmdir_actions:
-            rmdir_actions = actions.ActionSequence(self.rmdir_actions)
-            self.executor.submit(rmdir_actions)
+        if self.executor is not None:
+            if self.actions:
+                self.executor.submit(actions.ActionSequence(self.actions))
         
-        self.executor.submit(None)
-        return self.executor.results
+            self.executor.submit(TASK_SENTINEL)
+            return self.executor.results#, None
+        else:
+            # self.actions.append(TASK_SENTINEL)
+            return self.results, self.actions
