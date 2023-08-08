@@ -2,7 +2,7 @@
     "archives"  :   {
         "extensions"    :   ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"],
         "functions"     :   ["unpack","copy"],
-        "use"           :   "processes"
+        "use"           :   "processpool"
     },
 
     "video"     :   {
