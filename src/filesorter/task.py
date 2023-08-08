@@ -40,17 +40,17 @@ class Task(actions.Task):
 
     def get_executor_from_registry(self, use: str):
         executor = None
-                try:
-                    creator = registry[use]
-                except KeyError as ex:
-                    creator = None
-                if creator is not None:
-                    executor = creator()
-                    if executor is not None:
-                        logger.debug(
-                            f"{Logging.info(str(self))}. "
-                            f"Created child executor({type(executor)})."
-                        )
+        try:
+            creator = registry[use]
+        except KeyError as ex:
+            creator = None
+        if creator is not None:
+            executor = creator()
+            if executor is not None:
+                logger.debug(
+                    f"{Logging.info(str(self))}. "
+                    f"Created child executor({type(executor)})."
+                )
         return executor
 
     # if present use field, create child executor
@@ -64,29 +64,21 @@ class Task(actions.Task):
             else:
                 executor = self.get_executor_from_registry(use)
                 if executor is not None:
-                        self.executor.childs[use] = executor
-                        executor.parent = self.executor
-                        executor.start()
+                    self.executor.childs[use] = executor
+                    executor.parent = self.executor
+                    executor.start()
                     logger.debug(
                         f"{Logging.info(str(self))}. "
                         f"Start child executor({type(executor)})."
                     )
-            else:
-                executor = self.executor
-                logger.warning(
-                    f"{Logging.info(str(self))}. "
-                    f"Executor(name='{use}') not found. "
-                    f"Fallback to parent executor({type(executor)})."
-                )
-                return executor
-        elif not use and self.executor is not None:
-            executor = self.executor
-            # logger.warning(
-            #     f"{Logging.info(str(self))}. "
-            #     f"Executor(name='{use}') not found. "
-            #     f"Fallback to parent executor({type(executor)})."
-            # )
-            return self.executor
+        # elif not use and self.executor is not None:
+        #     executor = self.executor
+        #     logger.warning(
+        #         f"{Logging.info(str(self))}. "
+        #         f"Executor(name='{use}') not found. "
+        #         f"Fallback to parent executor({type(executor)})."
+        #     )
+        #     return executor
         elif use and self.executor is None:
             executor = self.get_executor_from_registry(use)
             if executor is not None:
@@ -96,8 +88,6 @@ class Task(actions.Task):
                     f"Start child executor({type(executor)})."
                 )
                 # self.executor = executor
-            return executor
-        else:
         return executor
 
     def _process_file(self, path):

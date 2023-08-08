@@ -38,7 +38,7 @@ Sort files by extension. Unpack supported archives.
                                 remove.
                                 Ex: 'unpack move' - will unpack archive file to
                                 destination directory and move it to same path.
-        -x --executer executor  One of thread, process, threadpool, processpool,
+        -x --executor executor  One of thread, process, threadpool, processpool,
                                 processes, threads
         -u --use executer       One of thread, process, threadpool, processpool,
                                 processes, threads
