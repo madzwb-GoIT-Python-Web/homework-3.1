@@ -1,3 +1,4 @@
+# TODO: logging, random runtime delay for testing via decorator
 # from __future__ import annotations
 
 import shutil
@@ -76,15 +77,17 @@ class Action(IAction):
             self,
             path        : Path,
             root        : Path|None = None,
-            destination : Path|None = None,
+            name        : Path|None = None,
             normalize   : bool = False,
-            overwrite   : bool = False
+            overwrite   : bool = False,
+            use_names   : bool = False
         ):
         self.path       = path          # File to process
         self.root       = root          # Desctination root
-        self.destination= destination   # Destination path
+        self.name       = name          # Destination path
         self.normalize  = normalize
         self.overwrite  = overwrite
+        self.use_names  = use_names
 
     def make_destination(self, split = True) -> Path:
         """Create destination path with normalization, if normalization is on."""
@@ -93,15 +96,28 @@ class Action(IAction):
         if split:
             file_ext    = self.path.suffix
         
+        # if file_name == "update-binary":
+        #     pass
         if self.normalize and Action.translation:
-            file_name = file_name.translate(cast(dict, Action.translation))
+            f = file_name.translate(cast(dict, Action.translation))
+            if file_name != f:
+                file_name = f
         
         file_name += file_ext
 
-        destination  = Path(self.root) / self.destination if self.root and self.destination else None
-        if destination:
+        destination = None
+        if self.root is not None:
+            destination  =  Path(self.root) / self.name\
+                                if      self.name is not None\
+                                    and self.use_names\
+                                else\
+                            Path(self.root)
+        if destination is not None:
             if not destination.exists():
-                destination.mkdir()
+                try:
+                    destination.mkdir(parents = True)
+                except Exception as e:
+                    pass
             return  destination / file_name
         raise Exception(f"Root path for destination:'{destination}' not defined.")
     
@@ -110,8 +126,8 @@ class Action(IAction):
 
 class CopyAction(Action):
 
-    def __init__(self, path: Path, root: Path, destination: Path, normalize = False, overwrite = False):
-        super().__init__(path, root, destination, normalize, overwrite)
+    def __init__(self, path: Path, root: Path, name: Path, normalize = False, overwrite = False, use_names = False):
+        super().__init__(path, root, name, normalize, overwrite, use_names)
 
     def __call__(self, *args, **kwargs) -> str|Exception:
         destination = self.make_destination()
@@ -120,13 +136,13 @@ class CopyAction(Action):
             if self.overwrite or not destination.exists():
                 shutil.copy2(self.path, destination)
                 return str(self) + ". From:'" + str(self.path) + "' to:'" + str(destination) + "' done."
-        raise Exception(str(self) + f". Destination:'{destination}' doesn't exist.")
+        raise Exception(str(self) + f". Destination:'{destination}' already exists and overwrite flag is off.")
         # return None
 
 class MoveAction(Action):
 
-    def __init__(self, path: Path, root: Path, destination: Path, normalize = False, overwrite = False):
-        super().__init__(path, root, destination, normalize, overwrite)
+    def __init__(self, path: Path, root: Path, name: Path, normalize = False, overwrite = False, use_names = False):
+        super().__init__(path, root, name, normalize, overwrite, use_names)
 
     def __call__(self, *args, **kwargs) -> str|Exception:
         destination = self.make_destination()
@@ -141,8 +157,8 @@ class MoveAction(Action):
 
 class RemoveAction(Action):
 
-    def __init__(self, path: Path, root: Path|None = None, destination: Path|None = None, normalize = False, overwrite = False):
-        super().__init__(path, root, destination, normalize, overwrite)
+    def __init__(self, path: Path, root: Path|None = None, name: Path|None = None, normalize = False, overwrite = False, use_names = False):
+        super().__init__(path, root, name, normalize, overwrite, use_names)
 
     def __call__(self, *args, **kwargs) -> str|Exception:
         if self.path.exists():
@@ -153,8 +169,8 @@ class RemoveAction(Action):
 
 class RemoveCkeckedAction(Action):
 
-    def __init__(self, path: Path, root: Path, destination: Path, normalize = False, overwrite = False):
-        super().__init__(path, root, destination, normalize, overwrite)
+    def __init__(self, path: Path, root: Path, name: Path, normalize = False, overwrite = False, use_names = False):
+        super().__init__(path, root, name, normalize, overwrite, use_names)
 
     def __call__(self, *args, **kwargs) -> str|Exception:
         """Remove archive if it is unpacked."""
@@ -168,8 +184,8 @@ class RemoveCkeckedAction(Action):
 
 class UnpackAction(Action):
 
-    def __init__(self, path: Path, root: Path, destination: Path, normalize = False, overwrite = False):
-        super().__init__(path, root, destination, normalize, overwrite)
+    def __init__(self, path: Path, root: Path, name: Path, normalize = False, overwrite = False, use_names = False):
+        super().__init__(path, root, name, normalize, overwrite, use_names)
 
     def __call__(self, *args, **kwargs) -> str|Exception:
         destination = self.make_destination(False)
@@ -184,13 +200,14 @@ class UnpackAction(Action):
                 except Exception as e: #shutil.ReadError as e:
                     destination.rmdir()
                     return e
-        raise Exception(str(self) + f". Destination:'{destination}' doesn't exist.")
+            raise Exception(str(self) + f". Destination:'{destination}' already exists and overwrite flag is off.")
+        raise Exception(str(self) + f". Destination:'{destination}' dosn't exist.")
         # return None
 
 class RemoveEmptyDirAction(Action):
 
-    def __init__(self, path: Path, root: Path|None = None, destination: Path|None = None, normalize = False, overwrite = False):
-        super().__init__(path, root, destination, normalize, overwrite)
+    def __init__(self, path: Path, root: Path|None = None, name: Path|None = None, normalize = False, overwrite = False, use_names = False):
+        super().__init__(path, root, name, normalize, overwrite, use_names)
 
     def __call__(self, *args, **kwargs) -> str|Exception:
         if self.path.exists() and not any(self.path.iterdir()):
