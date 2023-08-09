@@ -26,6 +26,7 @@ if "logger.config" in sys.modules:
         Logging.truncate()
         Logging.init()
     if "test_sorter" in __name__:# == "test_sorter":
+        config.config.DEBUG = True
         Logging.init()
 else:
     stream_logger = logging.StreamHandler()
@@ -134,7 +135,7 @@ class TestCaseOverwrite(TestCase):
     def setup(self, name):
         super().setup(name)
         self.opts.append("--overwrite")
-        self.size = [self.size, 5304456256, 5304456256, 5305043313]
+        self.size = [self.size, 5304456256, 5304456256, 5305043313, 5303097733]
 
     def check(self, name):
         self.assertNoLogs(logger,logging.ERROR)
