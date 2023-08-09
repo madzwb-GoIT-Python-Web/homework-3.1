@@ -82,10 +82,10 @@ class Filters(UserDict):
             # if not len(path):
             #     path = Path().cwd()
             # else:
-                path = Path(path)
+            path = Path(path)
         # if path and not path.exists():
         #     path.mkdir()
-            self._root    = path
+        self._root    = path
         # else:   #   Before running protection
         #     raise FileExistsError(f"Path: '{path}' doesn't exists.")
         

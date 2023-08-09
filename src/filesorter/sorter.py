@@ -164,7 +164,7 @@ def sort(args):
     logger.info("<Result")
     results = executor.get_results(False)
     for result in executor.lresults:
-            logger.info("\t" + str(result))
+        logger.info("\t" + str(result))
     # try:
     #     while result := executor.get_results(False):
     #         logger.info("\t" + str(result))
