@@ -185,8 +185,9 @@ def sort(args):
         logger.info(f"Total execution time: {delta}")
 
 def main():
-    parser = argparser.get_parser()
-    args = parser.parse_args()
+    args = argparser.parse(*sys.argv[1:])
+    print(args)
+    logger.setLevel(args.log_level)
     sort(args)
 
 
