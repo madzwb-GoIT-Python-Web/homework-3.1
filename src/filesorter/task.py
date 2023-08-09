@@ -120,14 +120,21 @@ class Task(actions.Task):
 
     #   Get path entity type
     def _path_type(self, path):
-        try:
-            is_dir  = path.is_dir()
-            is_file = path.is_file()
-        except Exception as e:
+        is_dir  = False
+        is_file = False
+        if path.exists():
+            try:
+                is_dir  = path.is_dir()
+                is_file = path.is_file()
+            except Exception as e:
+                self.results.put_nowait(str(e))
+                # if self.executor is not None and self.executor.results is not None:
+                #     self.executor.results.put_nowait(str(e))
+                raise e
+        else:
+            
+            e = FileExistsError(str(self) + f". Path:'{path}' dosn't exists.")
             self.results.put_nowait(str(e))
-            # if self.executor is not None and self.executor.results is not None:
-            #     self.executor.results.put_nowait(str(e))
-            raise e
         return is_dir, is_file
 
     def __call__(self, path = None, *args, **kwargs):
