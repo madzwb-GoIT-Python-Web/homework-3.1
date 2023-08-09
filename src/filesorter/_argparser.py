@@ -1,4 +1,6 @@
 import argparse
+import logging
+
 from pathlib import Path
 
 _parser = None
@@ -66,28 +68,30 @@ def get_parser():
         required    = False,
         nargs='?'
     )
-    # parser.add_argument(
-    #     "-v", "--verbose",
+    parser.add_argument(
+        "-v", "--verbose",
+        type        = str.upper,
     #     help        = ("increase output verbosity.\n\
     # 0 - Only errors printout\n\
     # 1 - Add warnings\n\
     # 2 - Add destination directory creation\n\
     # 3 - Add all filesystem modification\n\
     # 4 - Add internal script structures"),
-    #     choices     =   [
-    #                         "critical",
-    #                         "error",
-    #                         "warning",
-    #                         "info",
-    #                         "debug",
-    #                         "notset"
-    #                     ],
-    #     # action="count",
-    #     action      = "store",
-    #     required    = False,
-    #     default     = "notset",
-    #     nargs       = '*'
-    # )
+        choices     =   [
+                            "CRITICAL",
+                            "ERROR",
+                            "WARNING",
+                            "INFO",
+                            "DEBUG",
+                            "NOTSET"
+                        ],
+        # action="count",
+        metavar     = "level",
+        action      = "store",
+        required    = False,
+        default     = "notset",
+        nargs       = '?'
+    )
     parser.add_argument(
         "-d", "--destination",
         help        = "Destination directory.",
@@ -195,8 +199,10 @@ def get_args(*args):
                                 if  isinstance(__args.directories, Path)    \
                                 else                                        \
                             __args.use_names
+    
+    __args.log_level = logging._nameToLevel[__args.verbose]
     return __args
 
 def parse(*args):
-    _args = get_args(args)
+    _args = get_args(*args)
     return _args
