@@ -71,14 +71,22 @@ class Task(actions.Task):
                         f"{Logging.info(str(self))}. "
                         f"Start child executor({type(executor)})."
                     )
-        # elif not use and self.executor is not None:
-        #     executor = self.executor
-        #     logger.warning(
-        #         f"{Logging.info(str(self))}. "
-        #         f"Executor(name='{use}') not found. "
-        #         f"Fallback to parent executor({type(executor)})."
-        #     )
-        #     return executor
+                else:
+                    executor = self.executor
+                    logger.warning(
+                        f"{Logging.info(str(self))}. "
+                        f"Executor(name='{use}') not found. "
+                        f"Fallback to parent executor({type(executor)})."
+                    )
+                return executor
+        elif not use and self.executor is not None:
+            executor = self.executor
+            # logger.warning(
+            #     f"{Logging.info(str(self))}. "
+            #     f"Executor(name='{use}') not found. "
+            #     f"Fallback to parent executor({type(executor)})."
+            # )
+            return self.executor
         elif use and self.executor is None:
             executor = self.get_executor_from_registry(use)
             if executor is not None:
@@ -88,7 +96,9 @@ class Task(actions.Task):
                     f"Start child executor({type(executor)})."
                 )
                 # self.executor = executor
-        return executor
+            return executor
+        else:
+            return executor
 
     def _process_file(self, path):
         _filter = self.filters(path)
