@@ -89,6 +89,7 @@ class TestCase(unittest.TestCase,ITestCase):
                     "--executor"    , self.name,
                     "--settings"    , os.path.join(data_path,"settings.json"),
                     "--destination" , str(Path(self.dest) / (self.name + "." + name)),
+                    # "--use-names"   ,
                     self.path,
                 ]
 
@@ -128,6 +129,10 @@ class TestCase(unittest.TestCase,ITestCase):
         name = name.replace("_test","")
         return name
 
+    def set_name_and_get_args(self):
+        name = self.get_function_name()
+        self.opt_exend(name)
+        self.args =  argparser.get_args(*self.opts)
 
 
 class TestCaseOverwrite(TestCase):
@@ -135,7 +140,7 @@ class TestCaseOverwrite(TestCase):
     def setup(self, name):
         super().setup(name)
         self.opts.append("--overwrite")
-        self.size = [self.size, 5304456256, 5304456256, 5305043313, 5303097733]
+        self.size = [self.size, 5304456256, 5304456256, 5305043313, 5303097733, 5305043333]
 
     def check(self, name):
         self.assertNoLogs(logger,logging.ERROR)
@@ -157,45 +162,52 @@ class Tests(TestCase):
 
     @testing
     def mainthread_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
     @testing
     def thread_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
     @testing
     def process_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
     @testing
     def threads_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
     @testing
     def processes_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
     @testing
     def threadpool_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
     @testing
     def processpool_test(self):
-        name = self.get_function_name()
-        self.opt_exend(name)
-        self.args =  argparser.get_args(*self.opts)
+        self.set_name_and_get_args()
+        # name = self.get_function_name()
+        # self.opt_exend(name)
+        # self.args =  argparser.get_args(*self.opts)
 
 
 
