@@ -132,7 +132,6 @@ class Task(actions.Task):
                 #     self.executor.results.put_nowait(str(e))
                 raise e
         else:
-            
             e = FileExistsError(str(self) + f". Path:'{path}' dosn't exists.")
             self.results.put_nowait(str(e))
         return is_dir, is_file

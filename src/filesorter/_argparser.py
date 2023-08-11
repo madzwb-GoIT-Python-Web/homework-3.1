@@ -13,11 +13,12 @@ def get_parser():
     """Parse comand-line options"""
 
     parser = argparse.ArgumentParser(
-        description="Sort files by extension. Can unpack supported archives.",
+        description="Sort files by extension. \n\
+        Can unpack supported by 'shutil' archives.",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog = "Usage examples:\n\
-            sorter.py -v -o /usr/home/root/downloads /usr/home/root/must_be_sorted -s settings.json\n\
-        or  sorter.py -v -o /usr/home/root/downloads /usr/home/root/must_be_sorted -d images -e jpg bmp jpeg -f move"
+            sorter.py -v -o ~/downloads ~/must_be_sorted -s settings.json\n\
+        or  sorter.py -v -o ~/downloads ~/must_be_sorted -d images -e jpg bmp jpeg -f move"
     )  # ,exit_on_error=False
     parser.add_argument(
         "directories",
@@ -103,12 +104,15 @@ def get_parser():
         required    = False
     )
     parser.add_argument(
-        "-un", "--use-names",
-        help        = "Using names as subdirectories.",
+        "--dont-use-names",
+        help        = "Using filter name as destination subdirectory.\n\
+        If not specified, but destination directory matches source,\n\
+        will be set to 'True'.\n\
+        ",
         # type        = bool,
-        # metavar     = "use_names",
-        action      = "store_true",
-        default     = True,
+        # metavar     = "dont_use_names",
+        action      = "store_True",
+        default     = False,
         # default     = None,
         required    = False
     )
@@ -116,17 +120,18 @@ def get_parser():
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-s", "--settings",
-        help        = "Specify path to settings(JSON) file. Ex: settings.json",
+        help        = "Specify path to settings(JSON) file. Ex: settings.json\n\
+        .",
         type        = Path,
         action      = "store",
         metavar     = "settings",
         default     = "settings.json",
         required    = False
     )
-    filter_group = parser.add_argument_group("Filter")
+    filter_group = parser.add_argument_group("filter")
     filter_group.add_argument(
         "-n", "--name",
-        help        = "Filter name.",
+        help        = "Filter name. Will be used as subdirectory, if --use-names.",
         type        = str,
         metavar     = "name",
         action      = "store",
@@ -135,7 +140,7 @@ def get_parser():
     )
     filter_group.add_argument(
         "-e", "--extensions",
-        help        = "File's extensions. Ex: 'jpg jpeg png bmp'",
+        help        = "File's extensions. Ex: 'jpg jpeg png bmp'.",
         metavar     = "extensions",
         action      = "store",
         default     = "*",
@@ -144,6 +149,7 @@ def get_parser():
     )
     filter_group.add_argument(
         "-f", "--functions",
+        type        = str.lower,
         help        = "Functions' list(order sensitive).\n\
     A list of next functions:\n\
     copy, move, unpack, delete(check if archive already unpacked), remove.\n\
@@ -191,14 +197,14 @@ def get_args(*args):
         _parser = get_parser()
     __args = _parser.parse_args(args)
     # [source for source in args.directories if source == args.destination]
-    if not __args.use_names:
-        __args.use_names =  __args.destination in __args.directories        \
-                                if  isinstance(__args.directories, list)    \
-                                else                                        \
-                            __args.destination == __args.directories        \
-                                if  isinstance(__args.directories, Path)    \
-                                else                                        \
-                            __args.use_names
+    if __args.dont_use_names:
+        __args.dont_use_names = __args.destination not in __args.directories    \
+                                    if  isinstance(__args.directories, list)    \
+                                    else                                        \
+                                __args.destination != __args.directories        \
+                                    if  isinstance(__args.directories, Path)    \
+                                    else                                        \
+                                False#__args.dont_use_names
     
     __args.log_level = logging._nameToLevel[__args.verbose]
     return __args

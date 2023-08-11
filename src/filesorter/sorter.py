@@ -34,7 +34,45 @@ from filesorter._executors import registry, TASK_SENTINEL, RESULT_SENTINEL
 from filesorter.filters import Filter, Filters
 from filesorter.task import Task
 
+SETTINGS_FILENAME = "settings.json"
 
+# This file contains a filter's settings.
+# Keyword "archive" will be used as subdirectory name for all files
+# specified by "extensions" and for all files will be applied all of functions in
+# "functions". That's all will be executed in executor - specified by "use",
+# or in "mainthread" by default.
+SETTINGS =  {
+                "archives"  :   {
+                    "extensions"    :   ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"],
+                    "functions"     :   ["unpack", "copy"],
+                    "use"           :   "processes"
+                },
+
+                "video"     :   {
+                    "extensions"    :   ["avi", "mp4", "mov", "mkv"],
+                    "functions"     :   ["copy"]
+                },
+                "audio"     :   {
+                    "extensions"    :   ["wav", "mp3", "ogg", "amr"],
+                    "functions"     :   ["copy"]
+                },
+                "documents" :   {
+                    "extensions"    :   ["doc", "docx", "txt", "pdf", "xls", "xlsx", "ppt", "pptx", "rtf", "xml", "ini"],
+                    "functions"     :   ["copy"]
+                },
+                "images"    :   {
+                    "extensions"    :   ["jpeg", "png", "jpg", "svg"],
+                    "functions"     :   ["copy"]
+                },
+                "software"  :   {
+                    "extensions"    :   ["exe", "msi", "bat", "dll"],
+                    "functions"     :   ["copy"]
+                },
+                "other"     :   {
+                    "extensions"    :   [],
+                    "functions"     :   ["copy"]
+                }
+            }
 
 def timer(func):
     """Print the runtime of the decorated function"""
@@ -71,7 +109,7 @@ def sort_targets(args, executor, settings):
                         args.keep_empty_dir,
                         args.normalize,
                         args.overwrite,
-                        args.use_names,
+                        not args.dont_use_names,
                     )
         for name, setting in settings.items():
             filters +=  Filter(
@@ -98,14 +136,26 @@ def sort_targets(args, executor, settings):
     #     executor.submit(TASK_SENTINEL)
     return
 
-def load_settings(path = None):
-    if path is not None and not os.path.exists(path):
+def load_settings(path : Path):
+    # Full path specified
+    if path is not None and os.path.dirname(path) and not path.exists():
         raise LookupError(path, "not exists")
-    if path is None:
-        path = os.path.join(os.path.dirname(__file__), "settings.json")
-    with open(path, 'r') as settings:
-        dir2ext = json.load(settings)
-    return dir2ext
+    # File name specified only, try script's directory
+    elif path is not None and not os.path.dirname(path):
+        path = Path(os.path.dirname(__file__)) / path
+    # Not specified, try hardcoded
+    elif path is None:
+        path = Path(os.path.dirname(__file__)) / SETTINGS_FILENAME
+    
+    settings = None
+    with open(path, 'r') as fd:
+        settings = json.load(fd)
+        if settings:
+            logger.info(f"Loaded settings from {path}.")
+            logger.debug(f"Settings: {settings}.")
+        else:
+            logger.warning(f"Settings' file {path} is empty.")
+    return settings
 
 def sort(args):
     profile = None
@@ -117,38 +167,7 @@ def sort(args):
     if args.settings:
         settings = load_settings(args.settings)
     else:
-        settings = {
-            "archives"  :   {
-                "extensions"    :   ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"],
-                "functions"     :   ["unpack", "copy"],
-                "use"           :   "processes"
-            },
-
-            "video"     :   {
-                "extensions"    :   ["avi", "mp4", "mov", "mkv"],
-                "functions"     :   ["copy"]
-            },
-            "audio"     :   {
-                "extensions"    :   ["wav", "mp3", "ogg", "amr"],
-                "functions"     :   ["copy"]
-            },
-            "documents" :   {
-                "extensions"    :   ["doc", "docx", "txt", "pdf", "xls", "xlsx", "ppt", "pptx", "rtf", "xml", "ini"],
-                "functions"     :   ["copy"]
-            },
-            "images"    :   {
-                "extensions"    :   ["jpeg", "png", "jpg", "svg"],
-                "functions"     :   ["copy"]
-            },
-            "software"  :   {
-                "extensions"    :   ["exe", "msi", "bat", "dll"],
-                "functions"     :   ["copy"]
-            },
-            "other"     :   {
-                "extensions"    :   [],
-                "functions"     :   ["copy"]
-            }
-        }
+        settings = SETTINGS
 
     executor = registry[args.executor]()
     executor.start()
@@ -184,12 +203,14 @@ def sort(args):
         delta = end - start
         logger.info(f"Total execution time: {delta}")
 
-def main():
-    args = argparser.parse(*sys.argv[1:])
-    print(args)
-    logger.setLevel(args.log_level)
-    sort(args)
-
-
 if __name__ == "__main__":
+    
+    def main():
+        args = argparser.parse(*sys.argv[1:])
+        logger.setLevel(args.log_level)
+        logger.info(f"Set verbose to - {args.verbose}.")
+        logger.info(f"Got args: {args}.")
+        sort(args)
+
+
     main()

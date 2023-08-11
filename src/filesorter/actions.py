@@ -108,8 +108,7 @@ class Action(IAction):
         destination = None
         if self.root is not None:
             destination  =  Path(self.root) / self.name\
-                                if      self.name is not None\
-                                    and self.use_names\
+                                if self.name is not None and self.use_names\
                                 else\
                             Path(self.root)
         if destination is not None:
