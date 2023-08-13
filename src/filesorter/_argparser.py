@@ -114,7 +114,7 @@ or  sorter.py -v -o ~/downloads ~/must_be_sorted -n images -e jpg bmp -f move"
         will be set to 'True'.",
         # type        = bool,
         # metavar     = "dont_use_names",
-        action      = "store_True",
+        action      = "store_true",
         default     = False,
         # default     = None,
         required    = False
