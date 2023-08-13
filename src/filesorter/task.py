@@ -38,14 +38,14 @@ class Task(actions.Task):
         return f"<Task name='Directory traverse' path='{str(self.path)}'>"
 
 
-    def get_executor_from_registry(self, use: str):
+    def get_executor_from_registry(self, use: str, max_workers: int = 0):
         executor = None
         try:
             creator = registry[use]
         except KeyError as ex:
             creator = None
         if creator is not None:
-            executor = creator()
+            executor = creator(max_workers)
             if executor is not None:
                 logger.debug(
                     f"{Logging.info(str(self))}. "
@@ -54,7 +54,7 @@ class Task(actions.Task):
         return executor
 
     # if present use field, create child executor
-    def _executor(self, use: str):
+    def _executor(self, use: str, max_workers: int = 0):
         executor = None
         if use and self.executor is not None:
             if use == self.executor.alias:
@@ -62,7 +62,7 @@ class Task(actions.Task):
             elif use in self.executor.childs:
                 return self.executor.childs[use]
             else:
-                executor = self.get_executor_from_registry(use)
+                executor = self.get_executor_from_registry(use, max_workers)
                 if executor is not None:
                     self.executor.childs[use] = executor
                     executor.parent = self.executor
@@ -103,7 +103,7 @@ class Task(actions.Task):
     def _process_file(self, path):
         _filter = self.filters(path)
         action = _filter(path)
-        executor = self._executor(_filter.use)
+        executor = self._executor(_filter.use, _filter.max_workers)
         if executor is not None:
             executor.submit(action)
             if self.executor is None: # For ProcessPool self.executor is None, wait for child

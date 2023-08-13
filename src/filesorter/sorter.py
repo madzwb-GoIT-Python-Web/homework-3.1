@@ -45,7 +45,8 @@ SETTINGS =  {
                 "archives"  :   {
                     "extensions"    :   ["zip", "tar", "tgz", "gz", "7zip", "7z", "iso", "rar"],
                     "functions"     :   ["unpack", "copy"],
-                    "use"           :   "processes"
+                    "use"           :   "processes",    # Optional
+                    "max_workeres"  :   0,              # Optional
                 },
 
                 "video"     :   {
@@ -89,12 +90,13 @@ def timer(func):
 
 def sort_targets(args, executor, settings):
     # Make path list
+    pathes = []
     if isinstance(args.directories, str):
         pathes = args.directories.split()
     elif isinstance(args.directories, list):
         pathes = args.directories
     elif isinstance(args.directories, Path):
-        pathes = list(args.directories.name)
+        pathes.append(str(args.directories))
     else:
         raise ValueError(f"{args.directories} value error.")
     
@@ -111,21 +113,26 @@ def sort_targets(args, executor, settings):
                         args.overwrite,
                         not args.dont_use_names,
                     )
-        for name, setting in settings.items():
-            filters +=  Filter(
-                            filters,
-                            name,#args.destination / name,
-                            setting["extensions"],
-                            setting["functions"],
-                            setting["use"] if "use" in setting else ""
-                        )
+        if settings:
+            for name, setting in settings.items():
+                filters +=  Filter(
+                    filters,
+                    name,#args.destination / name,
+                    setting["extensions"],
+                    setting["functions"],
+                    setting["use"]          if "use"            in setting else "",
+                    setting["max_workers"]  if "max_wokrers"    in setting else 0,
+                    # setting["use"][0] if "use" in setting and len(setting["use"]) > 1 else "",
+                    # setting["use"][1] if "use" in setting and len(setting["use"]) > 1 else 0,
+                )
         if args.name:
             filters +=   Filter(
                             filters,#path,
                             args.name,
                             args.extensions,
                             args.functions,
-                            args.ext_executor,
+                            args.use,
+                            args.max_workers,
                         )
         task = Task(path, filters, executor)
         tasks.append(task)
@@ -167,7 +174,8 @@ def sort(args):
     if args.settings:
         settings = load_settings(args.settings)
     else:
-        settings = SETTINGS
+        # settings = SETTINGS
+        settings = None
 
     executor = registry[args.executor]()
     executor.start()

@@ -15,12 +15,14 @@ class Filter:
             name        : str,
             extensions  : str|list[str],
             functions   : str|list[str],
-            use         : str = ""
+            use         : str = "",
+            max_workers : int = 0,
         ):
         self.parent :Filters|None   = parent
         self.root   :Path|None      = None  #   Root directory. Sets with adding Filter to Task.
         self.name           = name          #   Destination directory.
         self.use            = use           #   Executor
+        self.max_workers    = max_workers   #   Max numbers of processes or threads
         self._actions       = []            #   List of functions' objects.
 
         if isinstance(extensions, str):
