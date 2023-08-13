@@ -13,16 +13,19 @@ def get_parser():
     """Parse comand-line options"""
 
     parser = argparse.ArgumentParser(
+        prog="sorter",
         description="Sort files by extension. \n\
         Can unpack supported by 'shutil' archives.",
-        formatter_class=argparse.RawTextHelpFormatter,
+        # formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=lambda prog: argparse.HelpFormatter("sorter",width=80),
         epilog = "Usage examples:\n\
-            sorter.py -v -o ~/downloads ~/must_be_sorted -s settings.json\n\
-        or  sorter.py -v -o ~/downloads ~/must_be_sorted -d images -e jpg bmp jpeg -f move"
+    sorter.py -v -o ~/downloads ~/must_be_sorted -s settings.json           \n\
+or  sorter.py -v -o ~/downloads ~/must_be_sorted -n images -e jpg bmp -f move"
     )  # ,exit_on_error=False
     parser.add_argument(
         "directories",
-        help        = "Directories list to process, if not specified used current directory.",
+        help        = "Directories list to process,\n\
+        if not specified will used current directory.",
         type        = Path,
         action      = "store",
         default     = Path().cwd(),
@@ -38,7 +41,8 @@ def get_parser():
     )
     parser.add_argument(
         "-norm", "--normalize",
-        help        = "Normalize file and directory(for unpacking archives) names.",
+        help        = "Normalize file and directory\n\
+        (for unpacking archives) names.",
         action      = "store_true",
         default     = False,
         required    = False
@@ -105,10 +109,9 @@ def get_parser():
     )
     parser.add_argument(
         "--dont-use-names",
-        help        = "Using filter name as destination subdirectory.\n\
+        help        = "Don't use filter name as destination subdirectory.\n\
         If not specified, but destination directory matches source,\n\
-        will be set to 'True'.\n\
-        ",
+        will be set to 'True'.",
         # type        = bool,
         # metavar     = "dont_use_names",
         action      = "store_True",
@@ -117,21 +120,28 @@ def get_parser():
         required    = False
     )
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    # group = parser.add_mutually_exclusive_group()
+    parser.add_argument(
         "-s", "--settings",
-        help        = "Specify path to settings(JSON) file. Ex: settings.json\n\
-        .",
+        help        = "Specify path to settings(JSON) file.\n\
+        If file name only specified, will search in \n\
+        script's directory.",
         type        = Path,
         action      = "store",
         metavar     = "settings",
         default     = "settings.json",
         required    = False
     )
-    filter_group = parser.add_argument_group("filter")
+    filter_group = parser.add_argument_group(
+        "Filter",
+        "If filter with name are present in settings.json,\n\
+        it will be overwrited."
+    )
     filter_group.add_argument(
         "-n", "--name",
-        help        = "Filter name. Will be used as subdirectory, if --use-names.",
+        help        = "Filter name. Will be used as subdirectory,\n\
+        if --dont-use-names is specified and destiantion\n\
+        directory not in source directory list.",
         type        = str,
         metavar     = "name",
         action      = "store",
@@ -152,9 +162,10 @@ def get_parser():
         type        = str.lower,
         help        = "Functions' list(order sensitive).\n\
     A list of next functions:\n\
-    copy, move, unpack, delete(check if archive already unpacked), remove.\n\
-    Ex: 'unpack move' - will unpack archive file to destination directory\n\
-    and move it to same path.",
+    copy, move, unpack, remove,\n\
+    removechecked(check if archive already unpacked).\n\
+    Ex: 'unpack move' - will unpack archive file\n\
+    to destination directory and move it to the same.",
         metavar     = "functions",
         action      = "store",
         default     = "move",
@@ -168,6 +179,7 @@ def get_parser():
                         ],
         nargs       = '*'
     )
+    # executor_group = filter_group.add_argument_group("Executor")
     filter_group.add_argument(
         "-u", "--use",
         type        = str.lower,
@@ -181,12 +193,23 @@ def get_parser():
                             "threadpool",
                             "processpool"
                         ],
-        metavar     = "ext_executor",
-        dest        = "ext_executor",
+        metavar     = "use",
+        dest        = "use",
         action      = "store",
         default     = "mainthread",
         required    = False,
-        nargs='?'
+        nargs       = '?'
+    )
+    filter_group.add_argument(
+        "-m", "--max-workers",
+        type        =  int,
+        help        = "Max number of workers.",
+        metavar     = "max_workers",
+        dest        = "max_workers",
+        action      = "store",
+        default     = 0,
+        # required    = False,
+        nargs       = '?'
     )
 
     return parser
